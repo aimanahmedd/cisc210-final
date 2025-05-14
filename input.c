@@ -6,16 +6,20 @@
 #include <stdlib.h>
 #include "gyro.h"
 #include "humidity_temp.h"
-
+#include <signal.h>
+#include <stdio.h>
 
 static pi_joystick_t *joystick = NULL;
-static pi_framebuffer_t *fb = NULL;
-
 static Point *cursor_pos = NULL;
+pi_i2c_t* i2c = NULL;
 
 void open_input(void) {
     if (!joystick) joystick = getJoystickDevice();
-    if (!fb) fb = getFrameBuffer();
+    if (!i2c) i2c = geti2cDevice();
+    if (i2c){
+    	configureAccelGyro(i2c);
+    }
+
 }
 
 void close_input(void) {
@@ -23,10 +27,11 @@ void close_input(void) {
         freeJoystick(joystick);
         joystick = NULL;
     }
-    if (fb) {
-        freeFrameBuffer(fb);
-        fb = NULL;
+    if(i2c){
+	freei2cDevice(i2c);
+	i2c = NULL;
     }
+
 }
 
 static uint16_t colors[] = {
@@ -72,22 +77,23 @@ void check_input(Point *pos, int delay) {
         pollJoystick(joystick, joystick_callback, delay);
     }
 }
+
+
+float threshold = 1;
+float x=0,y=0,z=0;
 bool detect_shake(void) {
-    coordinate_t acc;
-    pi_i2c_t* i2c = geti2cDevice();
+	coordinate_t data;
+        if (getAccelData(i2c,&data)){
+            float dx=data.x-x,dy=data.y-y,dz=data.z-z;
 
-    if (!i2c) return false;
-
-    if (getAccelData(i2c, &acc) != 0) {
-        return false;
-    }
-
-    float ax = acc.x;
-    float ay = acc.y;
-    float az = acc.z;
-
-    float magnitude = sqrtf(ax * ax + ay * ay + az * az);
-    return magnitude > 2.5f;
+	    x = data.x; y = data.y; z = data.z;
+            if(dx*dx+dy*dy+dz*dz > threshold) {
+                printf("bumped: %f %f %f\n",dx,dy,dz);
+		return true;
+	    }
+	    //printf("nbmped: %f %f %f\n", dx, dy, dz);
+	    return false;
+        }
+	return false;
 }
-
 

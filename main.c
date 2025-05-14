@@ -2,25 +2,33 @@
 #include <unistd.h>
 #include <stdio.h>
 
+int run = 1;
+void interrupt_handler(int sig){
+	run = 0;
+}
+
+
 int main() {
-    Point position = {3, 3};
 
-    open_input();
-    clear_display();
-    draw_pixel(position);
+	Point position = {3, 3};
+	
+	signal(SIGINT, interrupt_handler);
+    	open_input();
+	open_output();
 
-  while (true) {
-        check_input(&position, 100);
+	while(run){
+		check_input(&position, 1);
+		draw_pixel(position);
 
-        if (detect_shake()) {
-            clear_display();
-            printf("Shake detected! Screen cleared.\n");
-        }
+		if(detect_shake()){
+			clear_display();
+		}
+	}
 
-        usleep(50000);
-    }
 
-    close_input();
-    return 0;
+    	clear_display();    
+    	close_input();
+    	close_display();
+    	return 0;
 }
 

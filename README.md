@@ -1,4 +1,4 @@
-Aiman Ahmed - 702730426
+Aiman Ahmed
 
 Contribution: Programmed the entire implementation on pi, including 
 drawing component, switching color component, and shaking pi to
